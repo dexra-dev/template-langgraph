@@ -36,6 +36,7 @@ packages = ["dexra_core", "dexra_agent"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["examples"]
 
 [tool.ruff]
 line-length = 140
@@ -46,7 +47,7 @@ extend-exclude = ["dexra_core"]
 select = ["E", "F", "I", "B", "UP"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["conftest", "dexra_core", "dexra_agent"]
+known-first-party = ["conftest", "dexra_core", "dexra_agent", "whitelist_gate"]
 
 [tool.mypy]
 python_version = "3.11"
