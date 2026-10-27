@@ -68,6 +68,27 @@ Get a key at [dexra.dev/app/keys](https://dexra.dev/app/keys?utm_source=github&u
 | `USE_DEXRA_MCP` | `false` | Add Dexra's remote MCP tools to chat mode. |
 | `DEXRA_MCP_URL` | `$DEXRA_BASE_URL/mcp` | Dexra MCP endpoint (Streamable HTTP, `Authorization: Bearer $DEXRA_API_KEY`). |
 
+## Already have a bot?
+
+You don't need LangGraph or this template to buy only what Dexra marks `ok`. [examples/whitelist_gate.py](examples/whitelist_gate.py) is one file that uses only the Python standard library. Copy it into your bot and call it right before your swap:
+
+```python
+from whitelist_gate import dexra_allows_buy
+
+gate = dexra_allows_buy(mint, amount_sol)
+if not gate.allowed:
+    log.info("skip %s: %s", mint, gate.reasons)
+    return
+your_swap(mint, amount_sol)
+```
+
+- It runs `token_deep_check` and `swap_preflight` in parallel. The buy passes only if both say `ok`; `allow_caution=True` also accepts `caution`.
+- Without `DEXRA_API_KEY` it is off and allows every buy, so adding it changes nothing until you set a key.
+- On a Dexra error (402, 429, 5xx, network) it blocks the buy. Pass `fail_open=True` to keep buying as before and only log the reason.
+- Each check is two Dexra calls. Run your own filters first so only real candidates reach it. In an asyncio bot, call it with `await asyncio.to_thread(dexra_allows_buy, mint, amount_sol)`.
+
+Try it on one mint: `DEXRA_API_KEY=dxr_… python examples/whitelist_gate.py <mint> 0.01`.
+
 ## How the guard works
 
 `dexra_core` is the shared Dexra trading core, copied unchanged. `decide_buy` checks the mint and amount first, then runs `token_deep_check` and `swap_preflight` in parallel and allows the buy only if both verdicts pass. `buy` runs that decision, then quotes and executes through Jupiter Swap API v2, or stops at a dry run. The full rules are in [`dexra_core/README.md`](dexra_core/README.md).
@@ -95,6 +116,7 @@ dexra_agent/
   prompts.py           system prompt
   settings.py          agent settings from the environment
   cli.py               dexra-graph and dexra-agent
+examples/whitelist_gate.py   standalone pre-buy gate for an existing bot
 tests/                 core tests plus graph, tools and agent tests (mocked HTTP, fake model)
 ```
 
